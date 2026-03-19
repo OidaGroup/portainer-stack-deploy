@@ -109,7 +109,15 @@ Feel free contributing.
 ### Running unit tests
 
 ```sh
-npm test
+npm run test:unit
+```
+
+This project uses Vitest as unit test runner.
+
+### Running type checks
+
+```sh
+npm run test:ts
 ```
 
 ### Build, check linting, run tests

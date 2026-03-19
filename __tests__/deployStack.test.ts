@@ -1,7 +1,14 @@
 import nock from 'nock'
+import { beforeEach, afterEach, describe, test, expect, vi } from 'vitest'
 import { deployStack } from '../src/deployStack'
 
-jest.mock('@actions/core')
+vi.mock('@actions/core', () => ({
+  info: vi.fn(),
+  debug: vi.fn(),
+  setFailed: vi.fn(),
+  getInput: vi.fn(),
+  getBooleanInput: vi.fn()
+}))
 
 process.env.GITHUB_WORKSPACE = './'
 
@@ -35,17 +42,13 @@ describe('deployStack', () => {
     nock(BASE_API_URL)
       .matchHeader('authorization', 'Bearer token')
       .matchHeader('content-type', 'application/json')
-      .post('/stacks', {
+      .post('/stacks/create/swarm/string', {
         name: 'new-stack-name',
         stackFileContent:
           "version: '3.7'\n\nservices:\n  server:\n    image: ghcr.io/username/repo:sha-0142c14\n    deploy:\n      update_config:\n        order: start-first\n",
         swarmID: 's4ny2nh7qt8lluhvddeu9ulwl'
       })
-      .query({
-        type: 1,
-        method: 'string',
-        endpointId: 1
-      })
+      .query({ type: 1, method: 'string', endpointId: 1 })
       .reply(200)
 
     await deployStack({
@@ -59,23 +62,19 @@ describe('deployStack', () => {
       image: 'ghcr.io/username/repo:sha-0142c14'
     })
 
-    nock.isDone()
+    expect(nock.isDone()).toBe(true)
   })
 
   test('deploy compose stack', async () => {
     nock(BASE_API_URL)
       .matchHeader('authorization', 'Bearer token')
       .matchHeader('content-type', 'application/json')
-      .post('/stacks', {
+      .post('/stacks/create/standalone/string', {
         name: 'new-compose-stack-name',
         stackFileContent:
           "version: '3.7'\n\nservices:\n  server:\n    image: ghcr.io/username/repo:sha-0142c14\n    deploy:\n      update_config:\n        order: start-first\n"
       })
-      .query({
-        type: 2,
-        method: 'string',
-        endpointId: 1
-      })
+      .query({ type: 2, method: 'string', endpointId: 1 })
       .reply(200)
 
     await deployStack({
@@ -88,7 +87,7 @@ describe('deployStack', () => {
       image: 'ghcr.io/username/repo:sha-0142c14'
     })
 
-    nock.isDone()
+    expect(nock.isDone()).toBe(true)
   })
 
   test('deploy existing stack', async () => {
@@ -101,9 +100,7 @@ describe('deployStack', () => {
         stackFileContent:
           "version: '3.7'\n\nservices:\n  server:\n    image: ghcr.io/username/repo:sha-0142c14\n    deploy:\n      update_config:\n        order: start-first\n"
       })
-      .query({
-        endpointId: 1
-      })
+      .query({ endpointId: 1 })
       .reply(200)
 
     await deployStack({
@@ -116,7 +113,7 @@ describe('deployStack', () => {
       image: 'ghcr.io/username/repo:sha-0142c14'
     })
 
-    nock.isDone()
+    expect(nock.isDone()).toBe(true)
   })
 
   test('deploy existing stack with env', async () => {
@@ -130,9 +127,7 @@ describe('deployStack', () => {
         stackFileContent:
           "version: '3.7'\n\nservices:\n  server:\n    image: ghcr.io/username/repo:sha-0142c14\n    deploy:\n      update_config:\n        order: start-first\n"
       })
-      .query({
-        endpointId: 1
-      })
+      .query({ endpointId: 1 })
       .reply(200)
 
     await deployStack({
@@ -145,23 +140,19 @@ describe('deployStack', () => {
       image: 'ghcr.io/username/repo:sha-0142c14'
     })
 
-    nock.isDone()
+    expect(nock.isDone()).toBe(true)
   })
 
   test('deploy with explicit endpoint id', async () => {
     nock(BASE_API_URL)
       .matchHeader('authorization', 'Bearer token')
       .matchHeader('content-type', 'application/json')
-      .post('/stacks', {
+      .post('/stacks/create/standalone/string', {
         name: 'new-stack-name',
         stackFileContent:
           "version: '3.7'\n\nservices:\n  server:\n    image: ghcr.io/username/repo:sha-0142c14\n    deploy:\n      update_config:\n        order: start-first\n"
       })
-      .query({
-        type: 2,
-        method: 'string',
-        endpointId: 2
-      })
+      .query({ type: 2, method: 'string', endpointId: 2 })
       .reply(200)
 
     await deployStack({
@@ -174,23 +165,19 @@ describe('deployStack', () => {
       image: 'ghcr.io/username/repo:sha-0142c14'
     })
 
-    nock.isDone()
+    expect(nock.isDone()).toBe(true)
   })
 
   test('deploy without specific image', async () => {
     nock(BASE_API_URL)
       .matchHeader('authorization', 'Bearer token')
       .matchHeader('content-type', 'application/json')
-      .post('/stacks', {
+      .post('/stacks/create/standalone/string', {
         name: 'new-stack-name',
         stackFileContent:
           "version: '3.7'\n\nservices:\n  server:\n    image: ghcr.io/username/repo:latest\n    deploy:\n      update_config:\n        order: start-first\n"
       })
-      .query({
-        type: 2,
-        method: 'string',
-        endpointId: 1
-      })
+      .query({ type: 2, method: 'string', endpointId: 1 })
       .reply(200)
 
     await deployStack({
@@ -202,23 +189,19 @@ describe('deployStack', () => {
       stackDefinitionFile: 'example-stack-definition.yml'
     })
 
-    nock.isDone()
+    expect(nock.isDone()).toBe(true)
   })
 
   test('deploy with template variables', async () => {
     nock(BASE_API_URL)
       .matchHeader('authorization', 'Bearer token')
       .matchHeader('content-type', 'application/json')
-      .post('/stacks', {
+      .post('/stacks/create/standalone/string', {
         name: 'new-stack-name',
         stackFileContent:
           "version: '3.7'\n\nservices:\n  server:\n    image: ghcr.io/testUsername/repo:latest\n    deploy:\n      update_config:\n        order: start-first\n"
       })
-      .query({
-        type: 2,
-        method: 'string',
-        endpointId: 1
-      })
+      .query({ type: 2, method: 'string', endpointId: 1 })
       .reply(200)
 
     await deployStack({
@@ -231,6 +214,6 @@ describe('deployStack', () => {
       templateVariables: { username: 'testUsername' }
     })
 
-    nock.isDone()
+    expect(nock.isDone()).toBe(true)
   })
 })

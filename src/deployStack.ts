@@ -1,8 +1,8 @@
 import { PortainerApi } from './api'
-import path from 'path'
-import fs from 'fs'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import Handlebars from 'handlebars'
-import * as core from '@actions/core'
+import { debug, info } from '@actions/core'
 
 type DeployStack = {
   portainerHost: string
@@ -29,29 +29,29 @@ function generateNewStackDefinition(
   image?: string
 ): string | undefined {
   if (!stackDefinitionFile) {
-    core.info(`No stack definition file provided. Will not update stack definition.`)
+    info(`No stack definition file provided. Will not update stack definition.`)
     return undefined
   }
 
-  const stackDefFilePath = path.join(process.env.GITHUB_WORKSPACE as string, stackDefinitionFile)
-  core.info(`Reading stack definition file from ${stackDefFilePath}`)
-  let stackDefinition = fs.readFileSync(stackDefFilePath, 'utf8')
+  const stackDefFilePath = join(process.env.GITHUB_WORKSPACE as string, stackDefinitionFile)
+  info(`Reading stack definition file from ${stackDefFilePath}`)
+  let stackDefinition = readFileSync(stackDefFilePath, 'utf8')
   if (!stackDefinition) {
     throw new Error(`Could not find stack-definition file: ${stackDefFilePath}`)
   }
 
   if (templateVariables) {
-    core.info(`Applying template variables for keys: ${Object.keys(templateVariables)}`)
+    info(`Applying template variables for keys: ${Object.keys(templateVariables)}`)
     stackDefinition = Handlebars.compile(stackDefinition)(templateVariables)
   }
 
   if (!image) {
-    core.info(`No new image provided. Will use image in stack definition.`)
+    info(`No new image provided. Will use image in stack definition.`)
     return stackDefinition
   }
 
   const imageWithoutTag = image.substring(0, image.indexOf(':'))
-  core.info(`Inserting image ${image} into the stack definition`)
+  info(`Inserting image ${image} into the stack definition`)
   return stackDefinition.replace(new RegExp(`${imageWithoutTag}(:.*)?\n`), `${image}\n`)
 }
 
@@ -75,13 +75,10 @@ export async function deployStack({
     templateVariables,
     image
   )
-  if (stackDefinitionToDeploy) core.debug(stackDefinitionToDeploy)
+  if (stackDefinitionToDeploy) debug(stackDefinitionToDeploy)
 
-  core.info('Logging in to Portainer instance...')
-  await portainerApi.login({
-    username,
-    password
-  })
+  info('Logging in to Portainer instance...')
+  await portainerApi.login({ username, password })
 
   try {
     const allStacks = await portainerApi.getStacks()
@@ -90,13 +87,11 @@ export async function deployStack({
     })
 
     if (existingStack) {
-      core.info(`Found existing stack with name: ${stackName}`)
-      core.info('Updating existing stack...')
+      info(`Found existing stack with name: ${stackName}`)
+      info('Updating existing stack...')
       await portainerApi.updateStack(
         existingStack.Id,
-        {
-          endpointId: existingStack.EndpointId
-        },
+        { endpointId: existingStack.EndpointId },
         {
           env: existingStack.Env,
           stackFileContent: stackDefinitionToDeploy,
@@ -104,33 +99,29 @@ export async function deployStack({
           pullImage: pullImage ?? false
         }
       )
-      core.info('Successfully updated existing stack')
+      info('Successfully updated existing stack')
     } else {
       if (!stackDefinitionToDeploy) {
         throw new Error(
           `Stack with name ${stackName} does not exist and no stack definition file was provided.`
         )
       }
-      core.info('Deploying new stack...')
+      info('Deploying new stack...')
       await portainerApi.createStack(
-        {
-          type: swarmId ? StackType.SWARM : StackType.COMPOSE,
-          method: 'string',
-          endpointId
-        },
+        { type: swarmId ? StackType.SWARM : StackType.COMPOSE, method: 'string', endpointId },
         {
           name: stackName,
           stackFileContent: stackDefinitionToDeploy,
           swarmID: swarmId ? swarmId : undefined
         }
       )
-      core.info(`Successfully created new stack with name: ${stackName}`)
+      info(`Successfully created new stack with name: ${stackName}`)
     }
   } catch (error) {
-    core.info('⛔️ Something went wrong during deployment!')
+    info('⛔️ Something went wrong during deployment!')
     throw error
   } finally {
-    core.info(`Logging out from Portainer instance...`)
+    info(`Logging out from Portainer instance...`)
     await portainerApi.logout()
   }
 }
