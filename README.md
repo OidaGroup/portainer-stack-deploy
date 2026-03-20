@@ -1,7 +1,3 @@
-<p align="center">
-  <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
-</p>
-
 # Portainer Stack Deploy
 
 Portainer-stack-deploy is a GitHub Action for deploying a newly updated stack to a Portainer v2 instance. This action is useful when you have a continuous deployment pipeline. The action itself is inspired by how you deploy a task definition to Amazon ECS.
