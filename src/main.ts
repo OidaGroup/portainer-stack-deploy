@@ -1,5 +1,5 @@
 import { getBooleanInput, getInput, info, setFailed } from '@actions/core'
-import axios from 'axios'
+import { PortainerApiError } from './api'
 import { deployStack } from './deployStack'
 
 export async function run(): Promise<void> {
@@ -31,17 +31,10 @@ export async function run(): Promise<void> {
     })
     info('✅ Deployment done')
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      const {
-        status,
-        data,
-        config: { url, method }
-      } = error.response
-      return setFailed(
-        `AxiosError HTTP Status ${status} (${method} ${url}): ${JSON.stringify(data, null, 2)}`
-      )
+    if (error instanceof PortainerApiError) {
+      return setFailed(error.message)
     }
-    return setFailed(error as Error)
+    return setFailed(error instanceof Error ? error : new Error(String(error)))
   }
 }
 
