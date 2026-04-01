@@ -26,10 +26,10 @@ type QueryParams = Record<string, string | number | boolean | undefined>
 
 export class PortainerApiError extends Error {
   constructor(
-    public readonly status: number,
-    public readonly method: string,
-    public readonly url: string,
-    public readonly body?: unknown
+    readonly status: number,
+    readonly method: string,
+    readonly url: string,
+    readonly body?: unknown
   ) {
     super(
       `HTTP Status ${status} (${method} ${url}): ${

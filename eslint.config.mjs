@@ -62,9 +62,6 @@ export default [
                 project: './tsconfig.json'
             }
         },
-        plugins: {
-            '@typescript-eslint': tsEslintPlugin
-        },
         rules: {
             ...typescriptRules,
             'github/filenames-match-regex': 'off',
